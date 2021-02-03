@@ -1,72 +1,69 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const webpack = require("webpack");
 const path = require("path");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
+
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const banner = require("./banner.js");
 
+const basePath = __dirname;
+
 module.exports = {
+  resolve: {
+    extensions: [".js", ".ts", ".tsx"],
+  },
   entry: {
     app: path.join(__dirname, "src", "index.tsx"), // 웹팩을 실행할 대상 파일
   },
   output: {
-    // 웹팩의 결과물에 대한 정보를 입력하는 속성
-    filename: "[name].bundle.js",
-    chunkFilename: "[name].bundle.js",
-    path: path.resolve(__dirname, "dist"), // 결과물 경로
-    publicPath: "/", // HTML등 다른 파일에서 생성된 번들을 참조할 때, /을 기준으로 참조.
+    path: path.join(basePath, "dist"),
+    filename: "bundle.js",
   },
-  resolve: {
-    // 웹팩이 모듈을 처리하는 방식을 설정하는 속성으로 확장자를 생략해도 인식하게 만든다.
-    extensions: [".ts", ".tsx", ".js"],
-  },
-  devtool: "eval-cheap-source-map", // source-map을 설정하는 부분으로 에러가 발생했을 때 번들링된 파일에서 어느 부분에 에러가 났는지를 쉽게 확인할 수 있게 해주는 도구
+  devtool: "source-map",
   devServer: {
-    contentBase: path.join(__dirname, "/"),
-    publicPath: "/",
-    compress: true,
-    port: 3000,
-    historyApiFallback: true,
+    contentBase: path.join(basePath, "/"), // Content base
+    inline: true, // Enable watch and live reload
+    host: "localhost",
+    port: 8080,
+    stats: "errors-only",
   },
   module: {
     rules: [
       {
         test: /\.(ts|tsx)$/,
-        use: "ts-loader",
         exclude: /node_modules/,
+        loader: "awesome-typescript-loader",
+        options: {
+          useBabel: true,
+          babelCore: "@babel/core", // needed for Babel v7
+        },
       },
       {
         test: /\.css$/,
-        use: [
-          process.env.NODE_ENV === "production"
-            ? MiniCssExtractPlugin.loader // 프로덕션 환경
-            : "style-loader", // 개발 환경
-          "css-loader",
-        ],
+        use: [MiniCssExtractPlugin.loader, "css-loader"],
       },
       {
-        test: /\.(png|jpg|gif|svg)$/, // image 관련 확장자로 마치는 모든 파일
-        loader: "file-loader", // 파일 로더를 적용한다
+        test: /\.(png|jpg|gif|svg)$/,
+        loader: "file-loader",
         options: {
-          // publicPath: './dist/', // prefix를 아웃풋 경로로 지정 (image 엑박 이슈 때문에 주석. 2020-11-30)
-          name: "[name].[ext]?[hash]",
+          name: "assets/img/[name].[ext]?[hash]",
+          esModule: false,
         },
       },
-      // Image 엑박 이슈 때문에 url-loader 주석 (2020-11-30)
-      // {
-      // 	test: /\.(png|jpg|jpeg|gif)$/,
-      // 	use: {
-      // 		loader: 'url-loader', // url 로더를 설정한다
-      // 		options: {
-      // 			publicPath: './dist/', // file-loader와 동일
-      // 			name: '[name].[ext]?[hash]', // file-loader와 동일
-      // 			limit: 5000, // 5kb 미만 파일만 data url로 처리
-      // 		},
-      // 	},
-      // },
     ],
   },
+  // plugins: [
+  //   //Generate index.html in /dist => https://github.com/ampedandwired/html-webpack-plugin
+  //   new HtmlWebpackPlugin({
+  //     filename: "index.html", //Name of file in ./dist/
+  //     template: "./public/index.html", //Name of template in ./src
+  //     hash: true,
+  //   }),
+  //   new MiniCssExtractPlugin({
+  //     filename: "[name].css",
+  //     chunkFilename: "[id].css",
+  //   }),
+  // ],
   plugins: [
     new HtmlWebpackPlugin({
       template: "./public/index.html",
